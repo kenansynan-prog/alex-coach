@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Alex - English Voice Coach</title>
+
+<!-- PWA Meta Tags -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#22c55e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Alex Coach">
+<meta name="application-name" content="Alex Coach">
+<meta name="description" content="تحدث بالإنجليزية مع Alex مدربك الصوتي">
+
+<!-- Apple Touch Icons -->
+<link rel="apple-touch-icon" href="icons/icon-192x192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Tajawal:wght@400;500;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background: #0a0a0f;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Tajawal', sans-serif;
+  }
+
+  .phone {
+    width: 340px;
+    min-height: 620px;
+    background: linear-gradient(180deg, #161628 0%, #0f0f1a 100%);
+    border-radius: 44px;
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 52px 26px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .notch {
+    position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 110px; height: 26px;
+    background: #0a0a0f;
+    border-radius: 0 0 18px 18px;
+  }
+
+  /* Avatar */
+  .avatar-wrap { position: relative; width: 120px; height: 120px; margin-bottom: 18px; }
+
+  .pulse-ring {
+    position: absolute; inset: -14px;
+    border-radius: 50%;
+    border: 2px solid rgba(34,197,94,0.2);
+    animation: pRing 2s ease-in-out infinite;
+    display: none;
+  }
+  .pulse-ring.r2 { inset: -28px; animation-delay: 0.4s; border-color: rgba(34,197,94,0.1); }
+  .active .pulse-ring { display: block; }
+
+  @keyframes pRing { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.06);opacity:0.5} }
+
+  .avatar {
+    width: 120px; height: 120px; border-radius: 50%;
+    background: linear-gradient(135deg, #1a3a5c, #0d4a24);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 54px;
+    border: 2px solid rgba(34,197,94,0.25);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 40px rgba(34,197,94,0.08);
+    position: relative; z-index: 1;
+  }
+
+  .name { color: #fff; font-size: 26px; font-weight: 800; font-family: 'Nunito'; letter-spacing: -0.3px; }
+  .sub { color: rgba(255,255,255,0.35); font-size: 13px; margin-top: 3px; }
+
+  /* Status */
+  .status {
+    margin: 14px 0 8px;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 13px; font-weight: 600; font-family: 'Nunito';
+    transition: all 0.3s;
+  }
+  .s-idle   { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.08); }
+  .s-calling{ background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); animation: blink 1s infinite; }
+  .s-listen { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+  .s-think  { background: rgba(99,102,241,0.12); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.2); }
+  .s-speak  { background: rgba(14,165,233,0.12); color: #7dd3fc; border: 1px solid rgba(14,165,233,0.2); }
+  .s-error  { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .timer { color: rgba(255,255,255,0.3); font-size: 13px; font-family: 'Nunito'; margin-bottom: 6px; }
+
+  /* Visualizer */
+  .viz { display: flex; align-items: center; gap: 4px; height: 36px; margin: 4px 0 8px; }
+  .bar {
+    width: 4px; border-radius: 3px; background: #22c55e;
+    transition: height 0.08s ease;
+  }
+
+  /* Transcript boxes */
+  .box {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    text-align: center;
+    min-height: 60px;
+  }
+  .box-lbl { font-size: 10px; color: rgba(255,255,255,0.25); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+  .box-txt { font-size: 14px; color: rgba(255,255,255,0.8); font-family: 'Nunito'; line-height: 1.5; }
+  .interim { color: rgba(255,255,255,0.35); font-style: italic; }
+  .placeholder { color: rgba(255,255,255,0.2); font-size: 13px; }
+
+  .box.alex-box { background: rgba(34,197,94,0.06); border-color: rgba(34,197,94,0.15); }
+  .alex-box .box-lbl { color: #4ade80; }
+  .alex-box .box-txt { color: #d1fae5; }
+
+  /* Error box */
+  .err-box {
+    width: 100%;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 10px;
+    text-align: center;
+    display: none;
+  }
+  .err-box.show { display: block; }
+  .err-box p { color: #fca5a5; font-size: 13px; line-height: 1.6; }
+  .err-box .fix { color: rgba(255,255,255,0.5); font-size: 11px; margin-top: 6px; direction: ltr; text-align: left; }
+
+  /* Buttons */
+  .controls { display: flex; align-items: center; gap: 20px; margin-top: auto; padding-top: 14px; }
+
+  .ctrl { width: 54px; height: 54px; border-radius: 50%; border: none; cursor: pointer; font-size: 22px; display: flex; align-items: center; justify-content: center; transition: transform 0.15s; }
+  .ctrl:hover { transform: scale(1.1); }
+  .ctrl:active { transform: scale(0.93); }
+
+  .btn-mute { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); }
+  .btn-mute.muted { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.3); }
+
+  .btn-end { width: 72px; height: 72px; background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 6px 22px rgba(239,68,68,0.4); font-size: 28px; }
+
+  .start-btn {
+    width: 82px; height: 82px; border-radius: 50%;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border: none; cursor: pointer; font-size: 36px;
+    box-shadow: 0 8px 32px rgba(34,197,94,0.4);
+    animation: breathe 2.5s ease-in-out infinite;
+    transition: transform 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .start-btn:hover { transform: scale(1.1); animation: none; box-shadow: 0 10px 40px rgba(34,197,94,0.55); }
+  .start-btn:active { transform: scale(0.94); }
+
+  @keyframes breathe {
+    0%,100%{box-shadow:0 8px 32px rgba(34,197,94,0.4)}
+    50%{box-shadow:0 8px 50px rgba(34,197,94,0.65)}
+  }
+
+  .hint { color: rgba(255,255,255,0.25); font-size: 12px; text-align: center; line-height: 1.7; margin-top: 10px; }
+  .idle-area { display: flex; flex-direction: column; align-items: center; margin-top: auto; padding-top: 10px; }
+
+  /* Install banner */
+  #installBanner {
+    display: none;
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #22c55e; color: #000; font-weight: 700;
+    padding: 12px 24px; border-radius: 30px; font-size: 14px;
+    cursor: pointer; z-index: 999;
+    box-shadow: 0 4px 20px rgba(34,197,94,0.5);
+    border: none; font-family: 'Nunito', sans-serif;
+  }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <div class="notch"></div>
+
+  <div class="avatar-wrap" id="avatarWrap">
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring r2"></div>
+    <div class="avatar">🧑‍🏫</div>
+  </div>
+
+  <div class="name">Alex</div>
+  <div class="sub">English Voice Coach 🎙️</div>
+
+  <div class="status s-idle" id="status">اضغط للاتصال</div>
+  <div class="timer" id="timer" style="display:none">00:00</div>
+
+  <div class="viz" id="viz" style="display:none">
+    <div class="bar" id="b0" style="height:6px"></div>
+    <div class="bar" id="b1" style="height:6px"></div>
+    <div class="bar" id="b2" style="height:6px"></div>
+    <div class="bar" id="b3" style="height:6px"></div>
+    <div class="bar" id="b4" style="height:6px"></div>
+  </div>
+
+  <div class="err-box" id="errBox">
+    <p id="errMsg">تعذّر الوصول للمايكروفون</p>
+    <div class="fix" id="errFix"></div>
+  </div>
+
+  <div class="box" id="userBox" style="display:none">
+    <div class="box-lbl">أنت تقول</div>
+    <div class="box-txt" id="userTxt"><span class="placeholder">تحدث الآن...</span></div>
+  </div>
+
+  <div class="box alex-box" id="alexBox" style="display:none">
+    <div class="box-lbl">Alex يقول</div>
+    <div class="box-txt" id="alexTxt"></div>
+  </div>
+
+  <div class="idle-area" id="idleArea">
+    <button class="start-btn" id="startBtn" onclick="startCall()">📞</button>
+    <div class="hint">اتصل بـ Alex وتحدث بالإنجليزية بحرية<br>سيصحح أخطاءك بشكل طبيعي 😊</div>
+  </div>
+
+  <div class="controls" id="controls" style="display:none">
+    <button class="ctrl btn-mute" id="muteBtn" onclick="toggleMute()" title="كتم">🎙️</button>
+    <button class="ctrl btn-end" onclick="endCall()" title="إنهاء">📵</button>
+    <button class="ctrl" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1)" title="مكبر">🔊</button>
+  </div>
+</div>
+
+<!-- PWA Install Banner -->
+<button id="installBanner" onclick="installPWA()">📲 تثبيت التطبيق</button>
+
+<script>
+// ─── PWA: Register Service Worker ───────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW error:', err));
+  });
+}
+
+// ─── PWA: Install prompt ─────────────────────────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'block';
+});
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    document.getElementById('installBanner').style.display = 'none';
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').style.display = 'none';
+});
+
+// ─── App Logic ───────────────────────────────────────────────────────────────
+const SYSTEM = `You are Alex, a friendly native English speaker on a voice call helping an Arabic learner practice English.
+
+STRICT RULES:
+- Responses must be 2-3 sentences MAX. This is a voice call.
+- Be natural and warm: "Oh really?", "That's so cool!", "Haha, yeah...", "No way!"
+- If they make a grammar mistake, naturally use the correct form in your reply without pointing it out.
+- Example: they say "I go to market yesterday" → you say "Oh, you went to the market! What did you buy?"
+- Always end with ONE question to keep conversation going.
+- Be encouraging and patient.
+- Speak simply and clearly.`;
+
+let conversation = [];
+let recognition = null;
+let synth = window.speechSynthesis;
+let timerInterval = null;
+let seconds = 0;
+let muted = false;
+let isAlexSpeaking = false;
+let audioCtx = null, analyser = null, stream = null, rafId = null;
+let voices = [];
+
+function loadVoices() {
+  voices = synth.getVoices();
+  if (!voices.length) synth.onvoiceschanged = () => { voices = synth.getVoices(); };
+}
+loadVoices();
+
+function getEnglishVoice() {
+  const prefer = ['Google US English','Google UK English Female','Samantha','Alex','Daniel','Karen','Moira'];
+  for (const name of prefer) {
+    const v = voices.find(v => v.name === name);
+    if (v) return v;
+  }
+  return voices.find(v => v.lang && v.lang.startsWith('en')) || null;
+}
+
+function setStatus(text, cls) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = 'status ' + cls;
+}
+
+function startTimer() {
+  document.getElementById('timer').style.display = 'block';
+  timerInterval = setInterval(() => {
+    seconds++;
+    const m = String(Math.floor(seconds/60)).padStart(2,'0');
+    const s = String(seconds%60).padStart(2,'0');
+    document.getElementById('timer').textContent = m+':'+s;
+  }, 1000);
+}
+
+async function startViz() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 64;
+    const src = audioCtx.createMediaStreamSource(stream);
+    src.connect(analyser);
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    document.getElementById('viz').style.display = 'flex';
+
+    function tick() {
+      if (!analyser) return;
+      analyser.getByteFrequencyData(data);
+      const avg = data.slice(0,10).reduce((a,b)=>a+b,0)/10;
+      for (let i = 0; i < 5; i++) {
+        const h = isAlexSpeaking
+          ? 8 + 22 * Math.abs(Math.sin(Date.now()*0.004 + i*0.9))
+          : Math.max(4, (avg/255)*40 * (0.5 + 0.5*Math.random()));
+        document.getElementById('b'+i).style.height = h + 'px';
+        document.getElementById('b'+i).style.background = isAlexSpeaking ? '#38bdf8' : (avg > 20 ? '#22c55e' : 'rgba(255,255,255,0.2)');
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+    tick();
+    return true;
+  } catch(e) {
+    showError(e);
+    return false;
+  }
+}
+
+function showError(e) {
+  const box = document.getElementById('errBox');
+  const msg = document.getElementById('errMsg');
+  const fix = document.getElementById('errFix');
+  box.classList.add('show');
+
+  if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+    msg.textContent = '⚠️ لم يُسمح بالوصول للمايكروفون';
+    fix.innerHTML = '1. انقر على أيقونة 🔒 في شريط العنوان<br>2. اضبط المايكروفون على "السماح"<br>3. أعد تحميل الصفحة وحاول مجدداً';
+  } else if (e.name === 'NotFoundError') {
+    msg.textContent = '❌ لم يتم العثور على مايكروفون';
+    fix.innerHTML = 'تأكد من توصيل المايكروفون بجهازك';
+  } else {
+    msg.textContent = '⚠️ خطأ في المايكروفون: ' + e.message;
+    fix.innerHTML = 'جرب إعادة تحميل الصفحة';
+  }
+  setStatus('خطأ في المايكروفون', 's-error');
+}
+
+function clearError() {
+  document.getElementById('errBox').classList.remove('show');
+}
+
+async function startCall() {
+  clearError();
+  document.getElementById('idleArea').style.display = 'none';
+  setStatus('📞 جارٍ الاتصال...', 's-calling');
+
+  const ok = await startViz();
+  if (!ok) {
+    document.getElementById('idleArea').style.display = 'flex';
+    return;
+  }
+
+  document.getElementById('avatarWrap').classList.add('active');
+  document.getElementById('controls').style.display = 'flex';
+  document.getElementById('userBox').style.display = 'block';
+  startTimer();
+
+  setTimeout(() => {
+    const greeting = "Hey! Great to hear from you! I'm Alex. So, how are you doing today?";
+    conversation = [{ role:'assistant', content: greeting }];
+    alexSpeak(greeting, true);
+  }, 1500);
+}
+
+function alexSpeak(text, isFirst) {
+  isAlexSpeaking = true;
+  setStatus('🔊 Alex يتحدث...', 's-speak');
+  document.getElementById('alexBox').style.display = 'block';
+  document.getElementById('alexTxt').textContent = text;
+  document.getElementById('userBox').style.display = 'none';
+
+  synth.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'en-US';
+  utt.rate = 0.9;
+  utt.pitch = 1.0;
+  const v = getEnglishVoice();
+  if (v) utt.voice = v;
+
+  utt.onend = () => {
+    isAlexSpeaking = false;
+    document.getElementById('alexBox').style.display = 'none';
+    document.getElementById('userBox').style.display = 'block';
+    if (!muted) startListening();
+  };
+  utt.onerror = () => {
+    isAlexSpeaking = false;
+    document.getElementById('alexBox').style.display = 'none';
+    document.getElementById('userBox').style.display = 'block';
+    if (!muted) startListening();
+  };
+
+  setTimeout(() => { if (synth.paused) synth.resume(); }, 200);
+  synth.speak(utt);
+}
+
+function startListening() {
+  if (muted || isAlexSpeaking) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    setStatus('⚠️ المتصفح لا يدعم التعرف على الصوت', 's-error');
+    return;
+  }
+
+  setStatus('🎙️ استمع إليك...', 's-listen');
+  document.getElementById('userTxt').innerHTML = '<span class="placeholder">تحدث الآن بالإنجليزية...</span>';
+
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;
+  recognition.continuous = false;
+  recognition.maxAlternatives = 1;
+
+  let finalText = '';
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    finalText = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    const display = finalText || interim;
+    document.getElementById('userTxt').innerHTML = display
+      ? `<span>${finalText}</span><span class="interim">${interim}</span>`
+      : '<span class="placeholder">تحدث الآن...</span>';
+  };
+
+  recognition.onend = () => {
+    if (finalText.trim()) {
+      sendToAlex(finalText.trim());
+    } else {
+      setTimeout(() => { if (!muted && !isAlexSpeaking) startListening(); }, 400);
+    }
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === 'no-speech') {
+      setTimeout(() => { if (!muted && !isAlexSpeaking) startListening(); }, 400);
+    } else if (e.error === 'not-allowed') {
+      showError({ name: 'NotAllowedError' });
+    }
+  };
+
+  try { recognition.start(); } catch(e) {}
+}
+
+async function sendToAlex(userText) {
+  recognition?.stop();
+  setStatus('💭 Alex يفكر...', 's-think');
+  document.getElementById('userTxt').textContent = '"' + userText + '"';
+
+  conversation.push({ role:'user', content: userText });
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        system: SYSTEM,
+        messages: conversation.map(m => ({ role: m.role, content: m.content }))
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || "Sorry, could you say that again?";
+    conversation.push({ role:'assistant', content: reply });
+    alexSpeak(reply, false);
+  } catch(e) {
+    setStatus('خطأ في الاتصال', 's-error');
+    setTimeout(startListening, 2000);
+  }
+}
+
+function toggleMute() {
+  muted = !muted;
+  const btn = document.getElementById('muteBtn');
+  if (muted) {
+    recognition?.stop();
+    btn.textContent = '🔇';
+    btn.classList.add('muted');
+    setStatus('🔇 كتم الصوت', 's-listen');
+  } else {
+    btn.textContent = '🎙️';
+    btn.classList.remove('muted');
+    if (!isAlexSpeaking) startListening();
+  }
+}
+
+function endCall() {
+  synth.cancel();
+  recognition?.stop();
+  cancelAnimationFrame(rafId);
+  stream?.getTracks().forEach(t => t.stop());
+  audioCtx?.close();
+  analyser = null;
+  clearInterval(timerInterval);
+  isAlexSpeaking = false;
+  muted = false;
+  seconds = 0;
+  conversation = [];
+
+  document.getElementById('viz').style.display = 'none';
+  document.getElementById('controls').style.display = 'none';
+  document.getElementById('userBox').style.display = 'none';
+  document.getElementById('alexBox').style.display = 'none';
+  document.getElementById('timer').style.display = 'none';
+  document.getElementById('timer').textContent = '00:00';
+  document.getElementById('muteBtn').textContent = '🎙️';
+  document.getElementById('muteBtn').classList.remove('muted');
+  document.getElementById('avatarWrap').classList.remove('active');
+  document.getElementById('idleArea').style.display = 'flex';
+  clearError();
+  setStatus('اضغط للاتصال', 's-idle');
+}
+</script>
+</body>
+</html>
